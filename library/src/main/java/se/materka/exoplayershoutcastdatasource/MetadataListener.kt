@@ -16,6 +16,6 @@ package se.materka.exoplayershoutcastdatasource
  * limitations under the License.
  */
 
-internal interface MetadataListener {
+interface MetadataListener {
     fun onMetadataReceived(artist: String?, song: String?, show: String?)
 }

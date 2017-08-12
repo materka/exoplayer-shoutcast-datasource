@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="se.materka.demo.MainActivity">
+
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/mp3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="MP3" />
+
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/aac"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="AAC"
+        android:layout_below="@id/mp3"/>
+
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/ogg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="OGG"
+        android:layout_below="@id/aac"/>
+
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/stop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="STOP PLAYBACK"
+        android:layout_below="@id/ogg" />
+
+    <TextView
+        android:id="@+id/metadata"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text=""
+        android:layout_below="@id/stop"/>
+
+</RelativeLayout>

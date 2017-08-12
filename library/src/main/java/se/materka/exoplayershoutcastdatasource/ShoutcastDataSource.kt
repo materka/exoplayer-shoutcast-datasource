@@ -169,7 +169,7 @@ class ShoutcastDataSource
         }
 
         // Check for a valid content type.
-        val mediaType = response!!.body().contentType()
+        val mediaType = response!!.body()?.contentType()
         val contentType = mediaType?.toString()
         if (contentTypePredicate != null && !contentTypePredicate.evaluate(contentType)) {
             closeConnectionQuietly()
@@ -185,7 +185,7 @@ class ShoutcastDataSource
         if (dataSpec.length != C.LENGTH_UNSET.toLong()) {
             bytesToRead = dataSpec.length
         } else {
-            val contentLength = response!!.body().contentLength()
+            val contentLength = response!!.body()?.contentLength() ?: -1L
             bytesToRead = if (contentLength != -1L) contentLength - bytesToSkip else C.LENGTH_UNSET.toLong()
         }
 
@@ -242,16 +242,18 @@ class ShoutcastDataSource
     }
 
     @Throws(IOException::class)
-    private fun getInputStream(response: Response): InputStream {
+    private fun getInputStream(response: Response): InputStream? {
         val contentType = response.header("Content-Type")
         setIcyHeader(response.headers())
-        var stream = response.body().byteStream()
-        when (contentType) {
-            MP3, AAC, AACP -> {
-                val interval = Integer.parseInt(response.header(ICY_METAINT))
-                stream = IcyInputStream(stream, interval, null, this)
+        var stream = response.body()?.byteStream()
+        if (stream != null) {
+            when (contentType) {
+                MP3, AAC, AACP -> {
+                    val interval = Integer.parseInt(response.header(ICY_METAINT))
+                    stream = IcyInputStream(stream, interval, null, this)
+                }
+                OGG -> stream = OggInputStream(stream, this)
             }
-            OGG -> stream = OggInputStream(stream, this)
         }
         return stream
     }
@@ -372,9 +374,8 @@ class ShoutcastDataSource
         private val AAC = "audio/aac"
         private val AACP = "audio/aacp"
         private val OGG = "application/ogg"
-        private val ICY_METADATA = "Icy-se.materka.exoplayershoutcastdatasource.Metadata"
+        private val ICY_METADATA = "Icy-Metadata"
         private val ICY_METAINT = "icy-metaint"
-
 
         private val skipBufferReference = AtomicReference<ByteArray>()
     }

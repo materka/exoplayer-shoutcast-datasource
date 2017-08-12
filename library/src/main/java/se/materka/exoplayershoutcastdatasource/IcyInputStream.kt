@@ -22,7 +22,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.util.regex.Pattern
 
-internal class IcyInputStream
+class IcyInputStream
 /**
  * Creates a new input stream.
  * @param stream the underlying input stream
