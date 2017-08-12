@@ -1,3 +1,5 @@
+package se.materka.exoplayershoutcastdatasource
+
 /**
  * Copyright 2016 Mattias Karlsson
 
@@ -112,7 +114,7 @@ internal class IcyInputStream
             return
         }
 
-        Log.d(TAG, "Metadata string: " + s)
+        Log.d(TAG, "se.materka.exoplayershoutcastdatasource.Metadata string: " + s)
 
         parseMetadata(s)
     }
@@ -136,7 +138,7 @@ internal class IcyInputStream
     }
 
     private fun metadataReceived(artist: String, song: String, show: String) {
-        Log.i(TAG, "Metadata received: \nsong:$song\nartist:$artist\nshow:$show")
+        Log.i(TAG, "se.materka.exoplayershoutcastdatasource.Metadata received: \nsong:$song\nartist:$artist\nshow:$show")
         this.metadataListener?.onMetadataReceived(artist, song, show)
     }
 

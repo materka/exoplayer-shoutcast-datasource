@@ -1,3 +1,5 @@
+package se.materka.exoplayershoutcastdatasource;
+
 /**
  * Copyright 2016 Mattias Karlsson
  * <p>
@@ -189,7 +191,7 @@ final class OggInputStream extends PeekInputStream { // TODO: Use PushbackInputS
     }
 
     private static void metadataReceived(String artist, String song, MetadataListener listener) {
-        Log.i(TAG, "Metadata received: ");
+        Log.i(TAG, "se.materka.exoplayershoutcastdatasource.Metadata received: ");
         Log.i(TAG, "Artist: " + artist);
         Log.i(TAG, "Song: " + song);
         if (listener != null) {

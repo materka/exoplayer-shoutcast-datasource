@@ -1,3 +1,5 @@
+package se.materka.exoplayershoutcastdatasource;
+
 /**
  * Copyright 2016 Mattias Karlsson
  * <p>

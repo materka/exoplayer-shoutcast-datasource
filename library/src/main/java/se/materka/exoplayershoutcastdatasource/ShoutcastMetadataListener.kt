@@ -1,5 +1,7 @@
+package se.materka.exoplayershoutcastdatasource
+
 /**
- * Copyright 2017 Mattias Karlsson
+ * Copyright 2016 Mattias Karlsson
 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +16,6 @@
  * limitations under the License.
  */
 
-data class Metadata(val artist: String?,
-                    val song: String?,
-                    val show: String?,
-                    val channels: String?,
-                    val bitrate: String?,
-                    val station: String?,
-                    val genre: String?,
-                    val url: String?)
+interface ShoutcastMetadataListener {
+    fun onMetadataReceived(data: Metadata)
+}

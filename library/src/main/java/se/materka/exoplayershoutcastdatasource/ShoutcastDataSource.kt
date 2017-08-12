@@ -1,3 +1,5 @@
+package se.materka.exoplayershoutcastdatasource
+
 /**
  * Copyright 2016 Mattias Karlsson
 
@@ -370,7 +372,7 @@ class ShoutcastDataSource
         private val AAC = "audio/aac"
         private val AACP = "audio/aacp"
         private val OGG = "application/ogg"
-        private val ICY_METADATA = "Icy-Metadata"
+        private val ICY_METADATA = "Icy-se.materka.exoplayershoutcastdatasource.Metadata"
         private val ICY_METAINT = "icy-metaint"
 
 
