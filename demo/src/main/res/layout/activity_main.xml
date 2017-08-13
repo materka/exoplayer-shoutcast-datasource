@@ -1,43 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context="se.materka.demo.MainActivity">
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <android.support.v7.widget.AppCompatButton
-        android:id="@+id/mp3"
+    <data>
+
+        <variable
+            name="metadata"
+            type="se.materka.exoplayershoutcastdatasource.Metadata" />
+    </data>
+
+    <RelativeLayout xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="MP3" />
+        android:layout_height="match_parent"
+        tools:context="se.materka.demo.MainActivity">
 
-    <android.support.v7.widget.AppCompatButton
-        android:id="@+id/aac"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="AAC"
-        android:layout_below="@id/mp3"/>
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/mp3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="MP3" />
 
-    <android.support.v7.widget.AppCompatButton
-        android:id="@+id/ogg"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="OGG"
-        android:layout_below="@id/aac"/>
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/aac"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/mp3"
+            android:text="AAC" />
 
-    <android.support.v7.widget.AppCompatButton
-        android:id="@+id/stop"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="STOP PLAYBACK"
-        android:layout_below="@id/ogg" />
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/ogg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/aac"
+            android:text="OGG" />
 
-    <TextView
-        android:id="@+id/metadata"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:text=""
-        android:layout_below="@id/stop"/>
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/stop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/ogg"
+            android:text="STOP PLAYBACK" />
 
-</RelativeLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/stop"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{`Artist: ` + metadata.artist}" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{`Song: ` + metadata.song}" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{`Show: ` + metadata.show}" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{`Channels: ` + metadata.channels}" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{`Bitrate: ` + metadata.bitrate}" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{`Station: ` + metadata.station}" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{`Genre: ` + metadata.genre}" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{`URL: ` + metadata.url}" />
+        </LinearLayout>
+    </RelativeLayout>
+</layout>

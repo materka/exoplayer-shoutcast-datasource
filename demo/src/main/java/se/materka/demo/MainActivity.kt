@@ -1,10 +1,10 @@
 package se.materka.demo
 
+import android.databinding.DataBindingUtil
 import android.net.Uri
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.Button
-import android.widget.TextView
 import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
@@ -13,6 +13,7 @@ import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.util.Util
 import okhttp3.OkHttpClient
+import se.materka.demo.databinding.ActivityMainBinding
 import se.materka.exoplayershoutcastdatasource.Metadata
 import se.materka.exoplayershoutcastdatasource.ShoutcastDataSourceFactory
 import se.materka.exoplayershoutcastdatasource.ShoutcastMetadataListener
@@ -20,7 +21,7 @@ import se.materka.exoplayershoutcastdatasource.ShoutcastMetadataListener
 
 class MainActivity : AppCompatActivity(), ShoutcastMetadataListener {
     override fun onMetadataReceived(data: Metadata) {
-        refreshMetadata("${data.artist} - ${data.song}")
+        binding.metadata = data
     }
 
     private val player by lazy {
@@ -39,9 +40,12 @@ class MainActivity : AppCompatActivity(), ShoutcastMetadataListener {
                 this)
     }
 
+    private lateinit var binding: ActivityMainBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = DataBindingUtil.setContentView<ActivityMainBinding>(this, R.layout.activity_main)
+
         findViewById<Button>(R.id.mp3).setOnClickListener {
             play("http://http-live.sr.se/p3-mp3-192")
         }
@@ -73,11 +77,7 @@ class MainActivity : AppCompatActivity(), ShoutcastMetadataListener {
 
     private fun stop() {
         player.stop()
-         refreshMetadata("")
-    }
-
-    private fun refreshMetadata(metadata: String?) {
-        findViewById<TextView>(R.id.metadata).post { (findViewById<TextView>(R.id.metadata) as TextView).text = metadata }
+        binding.metadata = null
     }
 
     override fun onDestroy() {
