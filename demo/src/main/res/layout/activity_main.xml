@@ -14,36 +14,36 @@
         tools:context="se.materka.demo.MainActivity">
 
         <android.support.v7.widget.AppCompatButton
-            android:id="@+id/mp3"
+            android:id="@+id/btnMP3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="MP3" />
 
         <android.support.v7.widget.AppCompatButton
-            android:id="@+id/aac"
+            android:id="@+id/btnAAC"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/mp3"
+            android:layout_below="@id/btnMP3"
             android:text="AAC" />
 
         <android.support.v7.widget.AppCompatButton
-            android:id="@+id/ogg"
+            android:id="@+id/btnOGG"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/aac"
+            android:layout_below="@id/btnAAC"
             android:text="OGG" />
 
         <android.support.v7.widget.AppCompatButton
-            android:id="@+id/stop"
+            android:id="@+id/btnStop"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/ogg"
+            android:layout_below="@id/btnOGG"
             android:text="STOP PLAYBACK" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/stop"
+            android:layout_below="@id/btnStop"
             android:orientation="vertical"
             android:padding="16dp">
 

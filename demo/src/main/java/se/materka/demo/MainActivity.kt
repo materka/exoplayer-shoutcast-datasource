@@ -4,14 +4,13 @@ import android.databinding.DataBindingUtil
 import android.net.Uri
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.widget.Button
-import com.google.android.exoplayer2.DefaultLoadControl
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.util.Util
+import kotlinx.android.synthetic.main.activity_main.*
 import okhttp3.OkHttpClient
 import se.materka.demo.databinding.ActivityMainBinding
 import se.materka.exoplayershoutcastdatasource.Metadata
@@ -26,8 +25,7 @@ class MainActivity : AppCompatActivity(), ShoutcastMetadataListener {
 
     private val player by lazy {
         ExoPlayerFactory.newSimpleInstance(applicationContext,
-                DefaultTrackSelector(),
-                DefaultLoadControl())
+                DefaultTrackSelector())
     }
 
     private var audioSource: MediaSource? = null
@@ -44,27 +42,19 @@ class MainActivity : AppCompatActivity(), ShoutcastMetadataListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = DataBindingUtil.setContentView<ActivityMainBinding>(this, R.layout.activity_main)
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
 
-        findViewById<Button>(R.id.mp3).setOnClickListener {
-            play("http://http-live.sr.se/p3-mp3-192")
-        }
+        btnMP3.setOnClickListener { play("http://http-live.sr.se/p3-mp3-192") }
 
-        findViewById<Button>(R.id.aac).setOnClickListener {
-            play("http://radio.canstream.co.uk:8075/live.aac")
-        }
+        btnAAC.setOnClickListener { play("http://radio.canstream.co.uk:8075/live.aac") }
 
-        findViewById<Button>(R.id.ogg).setOnClickListener {
-            play("http://revolutionradio.ru/live.ogg")
-        }
+        btnOGG.setOnClickListener { play("http://revolutionradio.ru/live.ogg") }
 
-
-        findViewById<Button>(R.id.stop).setOnClickListener {
-            stop()
-        }
+        btnStop.setOnClickListener { stop() }
     }
 
     private fun play(url: String) {
+        binding.metadata = null
         // String with the url of the radio you want to play
         val uri = Uri.parse(url)
 
