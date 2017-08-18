@@ -32,6 +32,6 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.0'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.0'
     api 'com.google.android.exoplayer:exoplayer-core:r2.5.0'
-    api 'com.squareup.okhttp3:okhttp:3.7.0'
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.1.3-2'
+    api 'com.squareup.okhttp3:okhttp:3.8.1'
+    api "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
