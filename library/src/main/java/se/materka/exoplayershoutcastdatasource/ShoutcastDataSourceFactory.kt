@@ -20,34 +20,15 @@ package se.materka.exoplayershoutcastdatasource
  */
 
 import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.HttpDataSource
 import com.google.android.exoplayer2.upstream.HttpDataSource.Factory
-import com.google.android.exoplayer2.upstream.TransferListener
-import okhttp3.Call
 
 /**
  * A [Factory] that produces [ShoutcastDataSource].
  */
-class ShoutcastDataSourceFactory(private val callFactory: Call.Factory, private val userAgent: String,
-                                          private val transferListener: TransferListener<in DataSource>?,
-                                          private val shoutcastMetadataListener: ShoutcastMetadataListener) : Factory {
-    override fun clearAllDefaultRequestProperties() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun clearDefaultRequestProperty(name: String?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun getDefaultRequestProperties(): HttpDataSource.RequestProperties {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun setDefaultRequestProperty(name: String?, value: String?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+class ShoutcastDataSourceFactory(private val userAgent: String,
+                                 private val metadataListener: ShoutcastMetadataListener) : DataSource.Factory {
 
     override fun createDataSource(): ShoutcastDataSource {
-        return ShoutcastDataSource(callFactory, userAgent, null, transferListener, shoutcastMetadataListener, null)
+        return ShoutcastDataSource(userAgent, metadataListener)
     }
 }

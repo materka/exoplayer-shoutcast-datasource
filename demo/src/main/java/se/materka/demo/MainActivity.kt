@@ -11,7 +11,6 @@ import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
-import okhttp3.OkHttpClient
 import se.materka.demo.databinding.ActivityMainBinding
 import se.materka.exoplayershoutcastdatasource.Metadata
 import se.materka.exoplayershoutcastdatasource.ShoutcastDataSourceFactory
@@ -32,9 +31,7 @@ class MainActivity : AppCompatActivity(), ShoutcastMetadataListener {
 
     private val dataSourceFactory: ShoutcastDataSourceFactory by lazy {
         ShoutcastDataSourceFactory(
-                OkHttpClient.Builder().build(),
                 Util.getUserAgent(applicationContext, getString(R.string.app_name)),
-                null,
                 this)
     }
 
