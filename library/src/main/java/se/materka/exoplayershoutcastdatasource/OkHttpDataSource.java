@@ -48,7 +48,7 @@ import okhttp3.Response;
  * materka: Modified visibility modifier for property responseByteSteam,
  * since we need to pass the raw stream through the metadata extraction streams to get the metadata.
  */
-public class OkHttpDataSource implements HttpDataSource {
+class OkHttpDataSource implements HttpDataSource {
 
     static {
         ExoPlayerLibraryInfo.registerModule("goog.exo.okhttp");

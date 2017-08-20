@@ -1,4 +1,4 @@
-package se.materka.exoplayershoutcastdatasource
+package se.materka.exoplayershoutcastdatasource.stream
 
 /**
  * Copyright 2016 Mattias Karlsson
@@ -22,9 +22,9 @@ package se.materka.exoplayershoutcastdatasource
 import java.io.EOFException
 import java.io.IOException
 import java.io.InputStream
-import java.util.Arrays
+import java.util.*
 
-open class PeekInputStream private constructor(private val stream: InputStream, position: Long) : InputStream() {
+internal open class PeekInputStream private constructor(private val stream: InputStream, position: Long) : InputStream() {
     var position: Long = 0
         private set
     private var peekBuffer = ByteArray(8192)

@@ -1,4 +1,4 @@
-package se.materka.exoplayershoutcastdatasource
+package se.materka.exoplayershoutcastdatasource.stream
 
 /**
  * Copyright 2016 Mattias Karlsson
@@ -17,12 +17,14 @@ package se.materka.exoplayershoutcastdatasource
  */
 
 import android.util.Log
+import se.materka.TAG
+import se.materka.exoplayershoutcastdatasource.MetadataListener
 import java.io.FilterInputStream
 import java.io.IOException
 import java.io.InputStream
 import java.util.regex.Pattern
 
-class IcyInputStream
+internal class IcyInputStream
 /**
  * Creates a new input stream.
  * @param stream the underlying input stream
@@ -114,7 +116,7 @@ class IcyInputStream
             return
         }
 
-        Log.d(TAG, "se.materka.exoplayershoutcastdatasource.Metadata string: " + s)
+        Log.d(TAG, "Metadata string: " + s)
 
         parseMetadata(s)
     }
@@ -138,12 +140,8 @@ class IcyInputStream
     }
 
     private fun metadataReceived(artist: String, song: String, show: String) {
-        Log.i(TAG, "se.materka.exoplayershoutcastdatasource.Metadata received: \nsong:$song\nartist:$artist\nshow:$show")
+        Log.i(TAG, "Metadata received: \nsong:$song\nartist:$artist\nshow:$show")
         this.metadataListener?.onMetadataReceived(artist, song, show)
-    }
-
-    companion object {
-        private val TAG = IcyInputStream::class.java.name
     }
 }
 

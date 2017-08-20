@@ -20,6 +20,8 @@ import android.net.Uri
 import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.HttpDataSource
 import okhttp3.OkHttpClient
+import se.materka.exoplayershoutcastdatasource.stream.IcyInputStream
+import se.materka.exoplayershoutcastdatasource.stream.OggInputStream
 import java.io.IOException
 import java.io.InputStream
 

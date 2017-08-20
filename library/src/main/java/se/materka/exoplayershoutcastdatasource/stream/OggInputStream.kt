@@ -1,4 +1,4 @@
-package se.materka.exoplayershoutcastdatasource
+package se.materka.exoplayershoutcastdatasource.stream
 
 /**
  * Copyright 2016 Mattias Karlsson
@@ -21,11 +21,16 @@ package se.materka.exoplayershoutcastdatasource
 
 import android.util.Log
 import com.google.android.exoplayer2.util.ParsableByteArray
+import com.google.android.exoplayer2.util.Util
+import se.materka.exoplayershoutcastdatasource.MetadataListener
 import java.io.IOException
 import java.io.InputStream
 import java.util.*
 
-class OggInputStream(`in`: InputStream, private val listener: MetadataListener) : PeekInputStream(`in`) {
+/**
+ *
+ */
+internal class OggInputStream(stream: InputStream, private val listener: MetadataListener) : PeekInputStream(stream) {
 
     private val holder = PacketInfoHolder()
     private val idHeader = IdHeader()
@@ -116,19 +121,19 @@ class OggInputStream(`in`: InputStream, private val listener: MetadataListener) 
         private val TAG = OggInputStream::class.java.name
 
         @Throws(IOException::class, InterruptedException::class)
-        private fun peekPacket(stream: PeekInputStream, packetArray: ParsableByteArray, headerArray: ParsableByteArray, header: PageHeader, holder: PacketInfoHolder): Boolean {
+        private fun peekPacket(stream: PeekInputStream, packetArray: ParsableByteArray, scratch: ParsableByteArray, header: PageHeader, holder: PacketInfoHolder): Boolean {
             var segmentIndex: Int
             var currentSegmentIndex = -1
             packetArray.reset()
             var packetComplete = false
             while (!packetComplete) {
                 if (currentSegmentIndex < 0) {
-                    if (!unpackPageHeader(stream, headerArray, header)) {
+                    if (!unpackPageHeader(stream, scratch, header)) {
                         return false
                     }
 
                     segmentIndex = 0
-                    if (header.type and 1 == 1 && packetArray.limit() == 0) {
+                    if ((header.type and 1) == 1 && packetArray.limit() == 0) {
                         calculatePacketSize(header, segmentIndex, holder)
                         segmentIndex += holder.segmentCount
                     }
@@ -165,30 +170,27 @@ class OggInputStream(`in`: InputStream, private val listener: MetadataListener) 
         }
 
         @Throws(IOException::class, InterruptedException::class)
-        private fun unpackPageHeader(stream: PeekInputStream, headerArray: ParsableByteArray, header: PageHeader): Boolean {
-            headerArray.reset()
+        private fun unpackPageHeader(stream: PeekInputStream, scratch: ParsableByteArray, header: PageHeader): Boolean {
+            scratch.reset()
             header.reset()
-            if (stream.peekFully(headerArray.data, 0, 27, true)) {
-                if (headerArray.readUnsignedByte() == 79 &&
-                        headerArray.readUnsignedByte() == 103 &&
-                        headerArray.readUnsignedByte() == 103 &&
-                        headerArray.readUnsignedByte() == 83) { // Try find header signature 'OggS'
-                    header.revision = headerArray.readUnsignedByte()
+            if (stream.peekFully(scratch.data, 0, 27, true)) {
+                if (scratch.readUnsignedInt().toInt() == Util.getIntegerCodeForString("OggS")) {
+                    header.revision = scratch.readUnsignedByte()
                     if (header.revision != 0) {
                         return false
                     } else {
-                        header.type = headerArray.readUnsignedByte()
-                        header.granulePosition = headerArray.readLittleEndianLong()
-                        header.streamSerialNumber = headerArray.readLittleEndianUnsignedInt()
-                        header.pageSequenceNumber = headerArray.readLittleEndianUnsignedInt()
-                        header.pageChecksum = headerArray.readLittleEndianUnsignedInt()
-                        header.pageSegmentCount = headerArray.readUnsignedByte()
-                        headerArray.reset()
+                        header.type = scratch.readUnsignedByte()
+                        header.granulePosition = scratch.readLittleEndianLong()
+                        header.streamSerialNumber = scratch.readLittleEndianUnsignedInt()
+                        header.pageSequenceNumber = scratch.readLittleEndianUnsignedInt()
+                        header.pageChecksum = scratch.readLittleEndianUnsignedInt()
+                        header.pageSegmentCount = scratch.readUnsignedByte()
+                        scratch.reset()
                         header.headerSize = 27 + header.pageSegmentCount
-                        stream.peekFully(headerArray.data, 0, header.pageSegmentCount)
+                        stream.peekFully(scratch.data, 0, header.pageSegmentCount)
 
                         for (i in 0 until header.pageSegmentCount) {
-                            header.laces[i] = headerArray.readUnsignedByte()
+                            header.laces[i] = scratch.readUnsignedByte()
                             header.bodySize += header.laces[i]
                         }
                         return true
@@ -199,51 +201,46 @@ class OggInputStream(`in`: InputStream, private val listener: MetadataListener) 
         }
 
         private fun unpackIdHeader(scratch: ParsableByteArray, header: IdHeader) {
-            scratch.reset()
-            if (scratch.readUnsignedByte() == 1) {
-                if (scratch.readUnsignedByte() == 118 && scratch.readUnsignedByte() == 111 && scratch.readUnsignedByte() == 114 && scratch.readUnsignedByte() == 98 && scratch.readUnsignedByte() == 105 && scratch.readUnsignedByte() == 115) {
-                    header.reset()
-                    header.version = scratch.readLittleEndianUnsignedInt()
-                    header.audioChannels = scratch.readUnsignedByte()
-                    header.audioSampleRate = scratch.readLittleEndianUnsignedInt()
-                    header.bitRateMaximum = scratch.readLittleEndianInt()
-                    header.bitRateNominal = scratch.readLittleEndianInt()
-                    header.bitRateMinimum = scratch.readLittleEndianInt()
+            if (verifyVorbisHeader(1, scratch)) {
+                header.reset()
+                header.version = scratch.readLittleEndianUnsignedInt()
+                header.audioChannels = scratch.readUnsignedByte()
+                header.audioSampleRate = scratch.readLittleEndianUnsignedInt()
+                header.bitRateMaximum = scratch.readLittleEndianInt()
+                header.bitRateNominal = scratch.readLittleEndianInt()
+                header.bitRateMinimum = scratch.readLittleEndianInt()
 
-                    val blockSize = scratch.readUnsignedByte()
-                    header.blockSize0 = Math.pow(2.0, (blockSize and 15).toDouble()).toInt()
-                    header.blockSize1 = Math.pow(2.0, (blockSize shr 4).toDouble()).toInt()
-                }
+                val blockSize = scratch.readUnsignedByte()
+                header.blockSize0 = Math.pow(2.0, (blockSize and 15).toDouble()).toInt()
+                header.blockSize1 = Math.pow(2.0, (blockSize shr 4).toDouble()).toInt()
             }
         }
 
         private fun unpackCommentHeader(scratch: ParsableByteArray, header: CommentHeader, listener: MetadataListener) {
-            scratch.reset()
-            if (scratch.readUnsignedByte() == 3) {
-                if (scratch.readUnsignedByte() == 118 && scratch.readUnsignedByte() == 111 && scratch.readUnsignedByte() == 114 && scratch.readUnsignedByte() == 98 && scratch.readUnsignedByte() == 105 && scratch.readUnsignedByte() == 115) {
-                    header.reset()
-                    val vendorLength = scratch.readLittleEndianUnsignedInt().toInt()
-                    var length = 7 + 4
-                    header.vendor = scratch.readString(vendorLength)
-                    length += header.vendor.length
-                    val commentListLen = scratch.readLittleEndianUnsignedInt()
-                    length += 4
+            if (verifyVorbisHeader(3, scratch)) {
+                header.reset()
+                val vendorLength = scratch.readLittleEndianUnsignedInt().toInt()
+                var length = 7 + 4
+                header.vendor = scratch.readString(vendorLength)
+                length += header.vendor.length
+                val commentListLen = scratch.readLittleEndianUnsignedInt()
+                length += 4
 
-                    var len: Int
-                    var comment: String
-                    var i = 0
-                    while (i.toLong() < commentListLen) {
-                        len = scratch.readLittleEndianUnsignedInt().toInt()
-                        length += 4
-                        comment = scratch.readString(len)
-                        unPackComment(comment, header.comments)
-                        length += comment.length
-                        ++i
-                    }
-                    header.length = length
-                    metadataReceived(header.comments["ARTIST"] ?: "", header.comments["TITLE"] ?: "", listener)
+                var len: Int
+                var comment: String
+                var i = 0
+                while (i.toLong() < commentListLen) {
+                    len = scratch.readLittleEndianUnsignedInt().toInt()
+                    length += 4
+                    comment = scratch.readString(len)
+                    unPackComment(comment, header.comments)
+                    length += comment.length
+                    ++i
                 }
+                header.length = length
+                metadataReceived(header.comments["ARTIST"] ?: "", header.comments["TITLE"] ?: "", listener)
             }
+
         }
 
         private fun unPackComment(comment: String, commentContainer: HashMap<String, String>) {
@@ -257,8 +254,27 @@ class OggInputStream(`in`: InputStream, private val listener: MetadataListener) 
             }
         }
 
+        /**
+         * Verifies whether the next bytes in `header` are a vorbis header of the given
+         * `headerType`.
+         *
+         * @param headerType the type of the header expected.
+         * @param header the alleged header bytes.
+         * @return True/False if correct header type and actual vorbis header
+         */
+        fun verifyVorbisHeader(headerType: Int, header: ParsableByteArray): Boolean {
+            header.reset()
+            return header.readUnsignedByte() == headerType && header.readString(6) == "vorbis"
+        }
+
+        /**
+         * Invoke listeners for metadata
+         * @param artist
+         * @param song
+         * @param listener
+         */
         private fun metadataReceived(artist: String, song: String, listener: MetadataListener?) {
-            Log.i(TAG, "se.materka.exoplayershoutcastdatasource.Metadata received: ")
+            Log.i(TAG, "Metadata received: ")
             Log.i(TAG, "Artist: " + artist)
             Log.i(TAG, "Song: " + song)
             listener?.onMetadataReceived(artist, song, "")
