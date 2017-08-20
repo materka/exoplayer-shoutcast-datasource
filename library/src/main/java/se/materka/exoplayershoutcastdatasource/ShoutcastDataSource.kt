@@ -48,14 +48,6 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
                 HttpDataSource.RequestProperties().apply { set(ICY_METADATA, "1") })
     }
 
-    private data class IcyHeader(
-            var channels: String? = null,
-            var bitrate: String? = null,
-            var station: String? = null,
-            var genre: String? = null,
-            var url: String? = null
-    )
-
     override fun getUri(): Uri? {
         return okhttpDataSource.uri
     }
@@ -87,27 +79,29 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
         okhttpDataSource.close()
     }
 
+    @Throws(HttpDataSource.HttpDataSourceException::class)
     override fun read(buffer: ByteArray?, offset: Int, readLength: Int): Int {
         return okhttpDataSource.read(buffer, offset, readLength)
     }
 
     companion object {
+        val audioFormat = hashMapOf(
+                Pair("audio/mpeg", "MP3"),
+                Pair("audio/aac", "AAC"),
+                Pair("audio/aacp", "AACP"),
+                Pair("application/ogg", "OGG")
+        )
 
-        val MP3 = "audio/mpeg"
-        val AAC = "audio/aac"
-        val AACP = "audio/aacp"
-        val OGG = "application/ogg"
         val ICY_METADATA = "Icy-Metadata"
         val ICY_METAINT = "icy-metaint"
-        private val icyHeader = IcyHeader()
+        private val metadata = Metadata()
 
-        private fun extractHeaderMetadata(headers: Map<String, List<String>>?): IcyHeader {
-            icyHeader.station = headers?.get("icy-name")?.first()
-            icyHeader.url = headers?.get("icy-url")?.first()
-            icyHeader.genre = headers?.get("icy-genre")?.first()
-            icyHeader.channels = headers?.get("icy-channels")?.first()
-            icyHeader.bitrate = headers?.get("icy-br")?.first()
-            return icyHeader
+        private fun unpackHeaderMetadata(headers: Map<String, List<String>>?) {
+            metadata.station = headers?.get("icy-name")?.first()
+            metadata.url = headers?.get("icy-url")?.first()
+            metadata.genre = headers?.get("icy-genre")?.first()
+            metadata.channels = headers?.get("icy-channels")?.first()
+            metadata.bitrate = headers?.get("icy-br")?.first()
         }
     }
 
@@ -118,19 +112,30 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
 
         val contentType = response?.get("Content-Type")?.first()
         val interval = response?.get(ICY_METAINT)?.first()?.toInt()
-        when (contentType) {
-            MP3, AAC, AACP -> {
-                filterStream = IcyInputStream(rawStream, interval ?: 0, null, this)
+        contentType?.let {
+            if (audioFormat.containsKey(contentType)) {
+                metadata.format = audioFormat.get(contentType)
+                filterStream = when (metadata.format) {
+                    "MP3", "AAC", "AACP" -> {
+                        IcyInputStream(rawStream, interval ?: 0, this)
+                    }
+                    "OGG" -> OggInputStream(rawStream, this)
+                    else -> {
+                        rawStream
+                    }
+                }
+
             }
-            OGG -> filterStream = OggInputStream(rawStream, this)
         }
         return filterStream
     }
 
     override fun onMetadataReceived(artist: String?, song: String?, show: String?) {
         if (metadataListener != null) {
-            val headerMetadata: IcyHeader = extractHeaderMetadata(okhttpDataSource.responseHeaders)
-            val metadata = Metadata(artist, song, show, headerMetadata.channels, headerMetadata.bitrate, headerMetadata.station, headerMetadata.genre, headerMetadata.url)
+            unpackHeaderMetadata(okhttpDataSource.responseHeaders)
+            metadata.artist = artist
+            metadata.song = song
+            metadata.show = show
             metadataListener.onMetadataReceived(metadata)
         }
     }

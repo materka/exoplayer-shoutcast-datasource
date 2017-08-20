@@ -16,11 +16,12 @@ package se.materka.exoplayershoutcastdatasource
  * limitations under the License.
  */
 
-data class Metadata(val artist: String?,
-                    val song: String?,
-                    val show: String?,
-                    val channels: String?,
-                    val bitrate: String?,
-                    val station: String?,
-                    val genre: String?,
-                    val url: String?)
+data class Metadata(var artist: String? = null,
+                    var song: String? = null,
+                    var show: String? = null,
+                    var channels: String? = null,
+                    var bitrate: String? = null,
+                    var station: String? = null,
+                    var genre: String? = null,
+                    var url: String? = null,
+                    var format: String? = null)

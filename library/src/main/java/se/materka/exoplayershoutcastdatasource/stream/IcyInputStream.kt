@@ -28,13 +28,10 @@ internal class IcyInputStream
 /**
  * Creates a new input stream.
  * @param stream the underlying input stream
- * *
  * @param interval the interval of metadata frame is repeating (in bytes)
- * *
- * @param characterEncoding the encoding used for metadata strings - may be null = default is UTF-8
+ *
  */
-(stream: InputStream, private val interval: Int, characterEncoding: String?, private val metadataListener: MetadataListener?) : FilterInputStream(stream) {
-    private val characterEncoding: String = characterEncoding ?: "UTF-8"
+(stream: InputStream, private val interval: Int, private val metadataListener: MetadataListener?) : FilterInputStream(stream) {
     private var remaining: Int = interval
 
     @Throws(IOException::class)
@@ -100,7 +97,7 @@ internal class IcyInputStream
         size = readFully(buffer, 0, size)
 
         // find the string end:
-        for (i in 0..size - 1) {
+        for (i in 0 until size) {
             if (buffer[i].toInt() == 0) {
                 size = i
                 break
@@ -110,7 +107,7 @@ internal class IcyInputStream
         val s: String
 
         try {
-            s = String(buffer, 0, size, charset(characterEncoding))
+            s = String(buffer, 0, size, charset("UTF-8"))
         } catch (e: Exception) {
             Log.e(TAG, "Cannot convert bytes to String")
             return
