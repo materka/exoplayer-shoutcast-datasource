@@ -17,5 +17,9 @@ dependencies {
   compile 'com.github.materka:ExoplayerShoutcastDataSource:master-SNAPSHOT'
 }
 ```
+
+# Word of caution!
+Library is a work in progress so breaking changes will be happening
+
 # Usage
 See demo app
