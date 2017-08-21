@@ -14,7 +14,7 @@ allprojects {
 Add the dependency
 ```java
 dependencies {
-  compile 'com.github.materka:ExoplayerShoutcastDataSource:1.1.0'
+  compile 'com.github.materka:ExoplayerShoutcastDataSource:master-SNAPSHOT'
 }
 ```
 # Usage
