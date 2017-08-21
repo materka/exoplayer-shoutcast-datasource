@@ -31,37 +31,38 @@ internal class IcyInputStream
  * @param interval the interval of metadata frame is repeating (in bytes)
  *
  */
-(stream: InputStream, private val interval: Int, private val metadataListener: MetadataListener?) : FilterInputStream(stream) {
+(stream: InputStream, private val interval: Int, private val listener: MetadataListener) : FilterInputStream(stream) {
     private var remaining: Int = interval
 
     @Throws(IOException::class)
     override fun read(): Int {
-        val ret = super.read()
+        val read = super.read()
 
-        if (--remaining == 0) {
-            getMetadata()
+        if (--remaining == 0) { // Time to read metadata
+            readMetadata()
         }
 
-        return ret
+        return read
     }
 
     @Throws(IOException::class)
     override fun read(buffer: ByteArray, offset: Int, len: Int): Int {
-        val ret = super.`in`.read(buffer, offset, if (remaining < len) remaining else len)
+        val read = super.`in`.read(buffer, offset, if (remaining < len) remaining else len)
 
-        if (remaining == ret) {
-            getMetadata()
+        if (remaining == read) {
+            readMetadata()
         } else {
-            remaining -= ret
+            remaining -= read
         }
 
-        return ret
+        return read
     }
 
     /**
      * Tries to read all bytes into the target buffer.
-     * @param size the requested size
-     * *
+     * @param b Target buffer
+     * @param o Offset to start reading from
+     * @param s Size to read
      * @return the number of really bytes read; if less than requested, then eof detected
      */
     @Throws(IOException::class)
@@ -82,9 +83,11 @@ internal class IcyInputStream
     }
 
     @Throws(IOException::class)
-    private fun getMetadata() {
+    private fun readMetadata() {
+        // Reset counter
         remaining = interval
 
+        // Determine size of metadata
         var size = super.`in`.read()
 
         // either no metadata or eof:
@@ -94,9 +97,10 @@ internal class IcyInputStream
 
         val buffer = ByteArray(size)
 
+        // Read whole chunk of metadata
         size = readFully(buffer, 0, size)
 
-        // find the string end:
+        // find the string end
         for (i in 0 until size) {
             if (buffer[i].toInt() == 0) {
                 size = i
@@ -112,9 +116,6 @@ internal class IcyInputStream
             Log.e(TAG, "Cannot convert bytes to String")
             return
         }
-
-        Log.d(TAG, "Metadata string: " + s)
-
         parseMetadata(s)
     }
 
@@ -126,19 +127,14 @@ internal class IcyInputStream
     private fun parseMetadata(data: String) {
         val match = Pattern.compile("StreamTitle='([^;]*)'").matcher(data.trim { it <= ' ' })
         if (match.find()) {
-            // Presume artist/title is separated by " - ".
+            // Assume metadata is separated by hyphen (And the order is Show - Artist - Song)
             val metadata = match.group(1).split(" - ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             when (metadata.size) {
-                3 -> metadataReceived(metadata[1], metadata[2], metadata[0])
-                2 -> metadataReceived(metadata[0], metadata[1], "")
-                1 -> metadataReceived("", "", metadata[0])
+                3 -> this.listener.onMetadataReceived(metadata[1], metadata[2], metadata[0])
+                2 -> this.listener.onMetadataReceived(metadata[0], metadata[1], "")
+                1 -> this.listener.onMetadataReceived("", "", metadata[0])
             }
         }
-    }
-
-    private fun metadataReceived(artist: String, song: String, show: String) {
-        Log.i(TAG, "Metadata received: \nsong:$song\nartist:$artist\nshow:$show")
-        this.metadataListener?.onMetadataReceived(artist, song, show)
     }
 }
 

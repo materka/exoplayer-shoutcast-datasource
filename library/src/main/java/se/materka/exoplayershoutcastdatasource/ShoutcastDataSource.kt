@@ -17,17 +17,18 @@ package se.materka.exoplayershoutcastdatasource
  */
 
 import android.net.Uri
+import android.util.Log
 import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.HttpDataSource
 import okhttp3.OkHttpClient
+import se.materka.TAG
 import se.materka.exoplayershoutcastdatasource.stream.IcyInputStream
 import se.materka.exoplayershoutcastdatasource.stream.OggInputStream
-import java.io.IOException
 import java.io.InputStream
 
 /**
- * An [DataSource] which extracts shoutcast metadata from audio stream. Uses an modified instance of
- * [OkHttpDataSource] as the underlying stream provider
+ * An DataSource which extracts shoutcast metadata from audio stream. Uses an modified instance of
+ * OkHttpDataSource as the underlying stream provider
  */
 
 /**
@@ -75,6 +76,7 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
         return bytesToRead
     }
 
+    @Throws(HttpDataSource.HttpDataSourceException::class)
     override fun close() {
         okhttpDataSource.close()
     }
@@ -94,7 +96,7 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
 
         val ICY_METADATA = "Icy-Metadata"
         val ICY_METAINT = "icy-metaint"
-        private val metadata = Metadata()
+        private val metadata = ShoutcastMetadata()
 
         private fun unpackHeaderMetadata(headers: Map<String, List<String>>?) {
             metadata.station = headers?.get("icy-name")?.first()
@@ -105,9 +107,8 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
         }
     }
 
-    @Throws(IOException::class)
     private fun getInputStream(rawStream: InputStream): InputStream? {
-        var filterStream: InputStream? = null
+        var filterStream: InputStream = rawStream
         val response = okhttpDataSource.responseHeaders
 
         val contentType = response?.get("Content-Type")?.first()
@@ -121,6 +122,7 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
                     }
                     "OGG" -> OggInputStream(rawStream, this)
                     else -> {
+                        Log.e(TAG, "Unsupported format for extracting metadata")
                         rawStream
                     }
                 }
@@ -136,6 +138,7 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
             metadata.artist = artist
             metadata.song = song
             metadata.show = show
+            Log.i(TAG, "ShoutcastMetadata received\n$metadata")
             metadataListener.onMetadataReceived(metadata)
         }
     }

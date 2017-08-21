@@ -12,13 +12,13 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
 import se.materka.demo.databinding.ActivityMainBinding
-import se.materka.exoplayershoutcastdatasource.Metadata
+import se.materka.exoplayershoutcastdatasource.ShoutcastMetadata
 import se.materka.exoplayershoutcastdatasource.ShoutcastDataSourceFactory
 import se.materka.exoplayershoutcastdatasource.ShoutcastMetadataListener
 
 
 class MainActivity : AppCompatActivity(), ShoutcastMetadataListener {
-    override fun onMetadataReceived(data: Metadata) {
+    override fun onMetadataReceived(data: ShoutcastMetadata) {
         binding.metadata = data
     }
 
@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity(), ShoutcastMetadataListener {
                 DefaultTrackSelector())
     }
 
-    private var audioSource: MediaSource? = null
+    private var audioSource: ExtractorMediaSource? = null
 
     private val dataSourceFactory: ShoutcastDataSourceFactory by lazy {
         ShoutcastDataSourceFactory(

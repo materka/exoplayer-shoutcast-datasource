@@ -17,5 +17,5 @@ package se.materka.exoplayershoutcastdatasource
  */
 
 interface ShoutcastMetadataListener {
-    fun onMetadataReceived(data: Metadata)
+    fun onMetadataReceived(data: ShoutcastMetadata)
 }
