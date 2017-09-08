@@ -1,5 +1,4 @@
-# ExoplayerShoutcastDataSource
-Exoplayer 2 DataSource extension for playing shoutcast streams, with metadata support (MP3, AAC, AACP, and OGG)
+ExoPlayer v.2 data source extension for playing shoutcast streams, with metadata support (MP3, AAC, AACP, and OGG)
 
 # Installation
 Add it in your root build.gradle at the end of repositories:
