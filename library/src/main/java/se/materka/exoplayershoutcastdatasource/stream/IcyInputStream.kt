@@ -127,7 +127,7 @@ internal class IcyInputStream
     private fun parseMetadata(data: String) {
         val match = Pattern.compile("StreamTitle='([^;]*)'").matcher(data.trim { it <= ' ' })
         if (match.find()) {
-            // Assume metadata is separated by hyphen (And the order is Show - Artist - Song)
+            // Assume metadata is separated by hyphen (And the order is Show - Artist - Title)
             val metadata = match.group(1).split(" - ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             when (metadata.size) {
                 3 -> this.listener.onMetadataReceived(metadata[1], metadata[2], metadata[0])

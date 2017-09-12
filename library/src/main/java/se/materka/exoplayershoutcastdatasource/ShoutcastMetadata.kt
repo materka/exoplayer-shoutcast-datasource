@@ -16,16 +16,17 @@ package se.materka.exoplayershoutcastdatasource
  * limitations under the License.
  */
 
-data class ShoutcastMetadata(var artist: String? = null,
-                             var song: String? = null,
-                             var show: String? = null,
-                             var channels: String? = null,
-                             var bitrate: String? = null,
-                             var station: String? = null,
-                             var genre: String? = null,
-                             var url: String? = null,
-                             var format: String? = null) {
+data class ShoutcastMetadata(val artist: String? = null,
+                             val title: String? = null,
+                             val show: String? = null,
+                             val channels: String? = null,
+                             val bitrate: String? = null,
+                             val station: String? = null,
+                             val genre: String? = null,
+                             val url: String? = null,
+                             val format: String? = null) {
+
     override fun toString(): String {
-        return "Artist:$artist\nSong:$song\nShow:$show\nChannels:$channels\nBitrate:$bitrate\nStation:$station\nGenre:$genre\nUrl:$url\nFormat:$format"
+        return "Artist:$artist\nSong:$title\nShow:$show\nChannels:$channels\nBitrate:$bitrate\nStation:$station\nGenre:$genre\nUrl:$url\nFormat:$format"
     }
 }

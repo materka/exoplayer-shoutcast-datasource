@@ -17,5 +17,5 @@ package se.materka.exoplayershoutcastdatasource
  */
 
 internal interface MetadataListener {
-    fun onMetadataReceived(artist: String?, song: String?, show: String?)
+    fun onMetadataReceived(artist: String?, title: String?, show: String? = null)
 }

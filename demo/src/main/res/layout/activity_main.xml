@@ -60,11 +60,11 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Song:" />
+                android:text="Title:" />
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@{metadata.song}"
+                android:text="@{metadata.title}"
                 android:textStyle="bold" />
 
             <TextView

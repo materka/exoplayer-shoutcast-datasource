@@ -96,27 +96,16 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
 
         val ICY_METADATA = "Icy-Metadata"
         val ICY_METAINT = "icy-metaint"
-        private val metadata = ShoutcastMetadata()
-
-        private fun unpackHeaderMetadata(headers: Map<String, List<String>>?) {
-            metadata.station = headers?.get("icy-name")?.first()
-            metadata.url = headers?.get("icy-url")?.first()
-            metadata.genre = headers?.get("icy-genre")?.first()
-            metadata.channels = headers?.get("icy-channels")?.first()
-            metadata.bitrate = headers?.get("icy-br")?.first()
-        }
     }
 
     private fun getInputStream(rawStream: InputStream): InputStream? {
         var filterStream: InputStream = rawStream
         val response = okhttpDataSource.responseHeaders
 
-        val contentType = response?.get("Content-Type")?.first()
         val interval = response?.get(ICY_METAINT)?.first()?.toInt()
-        contentType?.let {
+        response?.get("Content-Type")?.first()?.let { contentType ->
             if (audioFormat.containsKey(contentType)) {
-                metadata.format = audioFormat.get(contentType)
-                filterStream = when (metadata.format) {
+                filterStream = when (audioFormat[contentType]) {
                     "MP3", "AAC", "AACP" -> {
                         IcyInputStream(rawStream, interval ?: 0, this)
                     }
@@ -132,13 +121,19 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
         return filterStream
     }
 
-    override fun onMetadataReceived(artist: String?, song: String?, show: String?) {
+    override fun onMetadataReceived(artist: String?, title: String?, show: String?) {
         if (metadataListener != null) {
-            unpackHeaderMetadata(okhttpDataSource.responseHeaders)
-            metadata.artist = artist
-            metadata.song = song
-            metadata.show = show
-            Log.i(TAG, "ShoutcastMetadata received\n$metadata")
+            val metadata = ShoutcastMetadata(
+            format = audioFormat[okhttpDataSource.responseHeaders?.get("Content-Type")?.first()],
+            station = okhttpDataSource.responseHeaders?.get("icy-name")?.first(),
+            url = okhttpDataSource.responseHeaders?.get("icy-url")?.first(),
+            genre = okhttpDataSource.responseHeaders?.get("icy-genre")?.first(),
+            channels = okhttpDataSource.responseHeaders?.get("icy-channels")?.first(),
+            bitrate = okhttpDataSource.responseHeaders?.get("icy-br")?.first(),
+            artist = artist,
+            title = title,
+            show = show)
+            Log.d(TAG, "ShoutcastMetadata received\n$metadata")
             metadataListener.onMetadataReceived(metadata)
         }
     }

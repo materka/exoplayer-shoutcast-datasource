@@ -223,8 +223,7 @@ internal class OggInputStream(stream: InputStream, private val listener: Metadat
                     ++i
                 }
                 this.length = length
-                listener.onMetadataReceived(this.comments["ARTIST"] ?: "",
-                        this.comments["TITLE"] ?: "", "")
+                listener.onMetadataReceived(this.comments["ARTIST"], this.comments["TITLE"])
             }
 
         }
