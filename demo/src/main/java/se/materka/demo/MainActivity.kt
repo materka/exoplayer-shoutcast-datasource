@@ -7,19 +7,27 @@ import android.support.v7.app.AppCompatActivity
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.source.ExtractorMediaSource
-import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_main.*
 import se.materka.demo.databinding.ActivityMainBinding
-import se.materka.exoplayershoutcastdatasource.ShoutcastMetadata
 import se.materka.exoplayershoutcastdatasource.ShoutcastDataSourceFactory
+import se.materka.exoplayershoutcastdatasource.ShoutcastMetadata
 import se.materka.exoplayershoutcastdatasource.ShoutcastMetadataListener
 
 
 class MainActivity : AppCompatActivity(), ShoutcastMetadataListener {
     override fun onMetadataReceived(data: ShoutcastMetadata) {
-        binding.metadata = data
+        binding.metadata = MetadataBinder(
+                data.getString(ShoutcastMetadata.METADATA_KEY_ARTIST),
+                data.getString(ShoutcastMetadata.METADATA_KEY_TITLE),
+                data.getString(ShoutcastMetadata.METADATA_KEY_SHOW),
+                data.getLong(ShoutcastMetadata.METADATA_KEY_BITRATE).toString(),
+                data.getString(ShoutcastMetadata.METADATA_KEY_GENRE),
+                data.getLong(ShoutcastMetadata.METADATA_KEY_CHANNELS).toString(),
+                data.getString(ShoutcastMetadata.METADATA_KEY_STATION),
+                data.getString(ShoutcastMetadata.METADATA_KEY_URL),
+                data.getString(ShoutcastMetadata.METADATA_KEY_FORMAT))
     }
 
     private val player by lazy {

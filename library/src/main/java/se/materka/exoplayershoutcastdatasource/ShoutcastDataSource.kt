@@ -123,17 +123,26 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
 
     override fun onMetadataReceived(artist: String?, title: String?, show: String?) {
         if (metadataListener != null) {
-            val metadata = ShoutcastMetadata(
-            format = audioFormat[okhttpDataSource.responseHeaders?.get("Content-Type")?.first()],
-            station = okhttpDataSource.responseHeaders?.get("icy-name")?.first(),
-            url = okhttpDataSource.responseHeaders?.get("icy-url")?.first(),
-            genre = okhttpDataSource.responseHeaders?.get("icy-genre")?.first(),
-            channels = okhttpDataSource.responseHeaders?.get("icy-channels")?.first(),
-            bitrate = okhttpDataSource.responseHeaders?.get("icy-br")?.first(),
-            artist = artist,
-            title = title,
-            show = show)
-            Log.d(TAG, "ShoutcastMetadata received\n$metadata")
+            val channels = okhttpDataSource.responseHeaders?.get("icy-channels")?.first()?.toLong()
+            val format = audioFormat[okhttpDataSource.responseHeaders?.get("Content-Type")?.first()]
+            val station = okhttpDataSource.responseHeaders?.get("icy-name")?.first()
+            val url = okhttpDataSource.responseHeaders?.get("icy-url")?.first()
+            val genre = okhttpDataSource.responseHeaders?.get("icy-genre")?.first()
+            val bitrate = okhttpDataSource.responseHeaders?.get("icy-br")?.first()?.toLong()
+
+            val metadata = ShoutcastMetadata.Builder()
+                    .putString(ShoutcastMetadata.METADATA_KEY_ARTIST, artist)
+                    .putString(ShoutcastMetadata.METADATA_KEY_TITLE, title)
+                    .putString(ShoutcastMetadata.METADATA_KEY_SHOW, show)
+                    .putString(ShoutcastMetadata.METADATA_KEY_GENRE, genre)
+                    .putString(ShoutcastMetadata.METADATA_KEY_STATION, station)
+                    .putString(ShoutcastMetadata.METADATA_KEY_FORMAT, format)
+                    .putString(ShoutcastMetadata.METADATA_KEY_URL, url)
+                    .putLong(ShoutcastMetadata.METADATA_KEY_BITRATE, bitrate)
+                    .putLong(ShoutcastMetadata.METADATA_KEY_CHANNELS, channels)
+                    .build()
+
+                    Log.d(TAG, "ShoutcastMetadata received\n$metadata")
             metadataListener.onMetadataReceived(metadata)
         }
     }
