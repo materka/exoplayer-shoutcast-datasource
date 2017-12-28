@@ -18,17 +18,22 @@ package se.materka.exoplayershoutcastdatasource
 
 import android.net.Uri
 import android.util.Log
+import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.upstream.DataSourceException
 import com.google.android.exoplayer2.upstream.DataSpec
 import com.google.android.exoplayer2.upstream.HttpDataSource
-import okhttp3.OkHttpClient
+import okhttp3.*
 import se.materka.TAG
 import se.materka.exoplayershoutcastdatasource.stream.IcyInputStream
 import se.materka.exoplayershoutcastdatasource.stream.OggInputStream
+import java.io.EOFException
+import java.io.IOException
 import java.io.InputStream
+import java.io.InterruptedIOException
+import java.util.concurrent.atomic.AtomicReference
 
 /**
- * An DataSource which extracts shoutcast metadata from audio stream. Uses an modified instance of
- * OkHttpDataSource as the underlying stream provider
+ * A DataSource which extracts shoutcast metadata from audio stream.
  */
 
 /**
@@ -39,52 +44,6 @@ import java.io.InputStream
  *
  */
 class ShoutcastDataSource(private val userAgent: String, private val metadataListener: ShoutcastMetadataListener?) : HttpDataSource, MetadataListener {
-
-    private val okhttpDataSource: OkHttpDataSource by lazy {
-        OkHttpDataSource(OkHttpClient.Builder().build(),
-                userAgent,
-                null,
-                null,
-                null,
-                HttpDataSource.RequestProperties().apply { set(ICY_METADATA, "1") })
-    }
-
-    override fun getUri(): Uri? {
-        return okhttpDataSource.uri
-    }
-
-    override fun getResponseHeaders(): Map<String, List<String>>? {
-        return okhttpDataSource.responseHeaders
-    }
-
-    override fun setRequestProperty(name: String, value: String) {
-        return okhttpDataSource.setRequestProperty(name, value)
-    }
-
-    override fun clearRequestProperty(name: String) {
-        okhttpDataSource.clearRequestProperty(name)
-    }
-
-    override fun clearAllRequestProperties() {
-        okhttpDataSource.clearAllRequestProperties()
-    }
-
-    @Throws(HttpDataSource.HttpDataSourceException::class)
-    override fun open(dataSpec: DataSpec): Long {
-        val bytesToRead = okhttpDataSource.open(dataSpec)
-        okhttpDataSource.responseByteStream = getInputStream(okhttpDataSource.responseByteStream)
-        return bytesToRead
-    }
-
-    @Throws(HttpDataSource.HttpDataSourceException::class)
-    override fun close() {
-        okhttpDataSource.close()
-    }
-
-    @Throws(HttpDataSource.HttpDataSourceException::class)
-    override fun read(buffer: ByteArray?, offset: Int, readLength: Int): Int {
-        return okhttpDataSource.read(buffer, offset, readLength)
-    }
 
     companion object {
         val audioFormat = hashMapOf(
@@ -98,37 +57,113 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
         val ICY_METAINT = "icy-metaint"
     }
 
-    private fun getInputStream(rawStream: InputStream): InputStream? {
-        var filterStream: InputStream = rawStream
-        val response = okhttpDataSource.responseHeaders
+    private val requestProperties: HttpDataSource.RequestProperties = HttpDataSource.RequestProperties().apply { set(ICY_METADATA, "1") }
+    private val skipBufferReference = AtomicReference<ByteArray>()
+    private val callFactory: OkHttpClient = OkHttpClient.Builder().build()
+    private var response: Response? = null
+    private var dataSpec: DataSpec? = null
+    private var responseByteStream: InputStream? = null
 
-        val interval = response?.get(ICY_METAINT)?.first()?.toInt()
-        response?.get("Content-Type")?.first()?.let { contentType ->
-            if (audioFormat.containsKey(contentType)) {
-                filterStream = when (audioFormat[contentType]) {
-                    "MP3", "AAC", "AACP" -> {
-                        IcyInputStream(rawStream, interval ?: 0, this)
-                    }
-                    "OGG" -> OggInputStream(rawStream, this)
-                    else -> {
-                        Log.e(TAG, "Unsupported format for extracting metadata")
-                        rawStream
-                    }
-                }
+    private var bytesToSkip: Long = 0
+    private var bytesToRead: Long = 0
+    private var bytesSkipped: Long = 0
+    private var bytesRead: Long = 0
 
+
+    override fun getUri(): Uri? {
+        return this.response?.let { Uri.parse(it.request().url().toString()) }
+    }
+
+    override fun getResponseHeaders(): Map<String, List<String>>? {
+        return this.response?.let { it.headers()?.toMultimap() }
+    }
+
+    override fun setRequestProperty(name: String, value: String) {
+        this.requestProperties.set(name, value)
+    }
+
+    override fun clearRequestProperty(name: String) {
+        this.requestProperties.remove(name)
+    }
+
+    override fun clearAllRequestProperties() {
+        this.requestProperties.clear()
+    }
+
+    @Throws(HttpDataSource.HttpDataSourceException::class)
+    override fun open(dataSpec: DataSpec): Long {
+
+        this.dataSpec = dataSpec
+        this.bytesRead = 0
+        this.bytesSkipped = 0
+        val request = makeRequest(dataSpec)
+        try {
+            this.response = callFactory.newCall(request).execute()
+        } catch (e: IOException) {
+            throw HttpDataSource.HttpDataSourceException("Unable to connect to " + dataSpec.uri.toString(), e,
+                    dataSpec, HttpDataSource.HttpDataSourceException.TYPE_OPEN)
+        }
+
+        val responseCode = response?.code() ?: -1
+
+        // Check for a valid response code.
+        if (response?.isSuccessful != true) {
+            val headers = request.headers().toMultimap()
+            close()
+            val exception = HttpDataSource.InvalidResponseCodeException(
+                    responseCode, headers, dataSpec)
+            if (responseCode == 416) {
+                exception.initCause(DataSourceException(DataSourceException.POSITION_OUT_OF_RANGE))
+            }
+            throw exception
+        }
+
+        response?.body()?.byteStream()?.let { this.responseByteStream = filterStream(it) }
+
+        // If we requested a range starting from a non-zero position and received a 200 rather than a
+        // 206, then the server does not support partial requests. We'll need to manually skip to the
+        // requested position.
+        bytesToSkip = if (responseCode == 200 && dataSpec.position != 0L) dataSpec.position else 0
+
+        // Determine the length of the data to be read, after skipping.
+        if (dataSpec.length != C.LENGTH_UNSET.toLong()) {
+            bytesToRead = dataSpec.length
+        } else {
+            response?.body()?.contentLength()?.let { length ->
+                bytesToRead = if (length != -1L) length - bytesToSkip else C.LENGTH_UNSET.toLong()
             }
         }
-        return filterStream
+
+        return bytesToRead
+    }
+
+    @Throws(HttpDataSource.HttpDataSourceException::class)
+    override fun close() {
+        response?.body()?.close()
+        response = null
+        responseByteStream = null
+    }
+
+    @Throws(HttpDataSource.HttpDataSourceException::class)
+    override fun read(buffer: ByteArray, offset: Int, readLength: Int): Int {
+        try {
+            skipInternal()
+            return readInternal(buffer, offset, readLength)
+        } catch (e: IOException) {
+            throw HttpDataSource.HttpDataSourceException(e, dataSpec, HttpDataSource.HttpDataSourceException.TYPE_READ)
+        }
+
     }
 
     override fun onMetadataReceived(artist: String?, title: String?, show: String?) {
-        if (metadataListener != null) {
-            val channels = okhttpDataSource.responseHeaders?.get("icy-channels")?.first()?.toLong()
-            val format = audioFormat[okhttpDataSource.responseHeaders?.get("Content-Type")?.first()]
-            val station = okhttpDataSource.responseHeaders?.get("icy-name")?.first()
-            val url = okhttpDataSource.responseHeaders?.get("icy-url")?.first()
-            val genre = okhttpDataSource.responseHeaders?.get("icy-genre")?.first()
-            val bitrate = okhttpDataSource.responseHeaders?.get("icy-br")?.first()?.toLong()
+        if (this.metadataListener != null) {
+            val headers = responseHeaders
+            val channels = headers?.get("icy-channels")?.first()?.toLong()
+            val format = audioFormat[headers?.get("Content-Type")?.first()]
+            val station = headers?.get("icy-name")?.first()
+            val url = headers?.get("icy-url")?.first()
+            val genre = headers?.get("icy-genre")?.first()
+            val bitrate = headers?.get("icy-br")?.first()?.toLong()
 
             val metadata = ShoutcastMetadata.Builder()
                     .putString(ShoutcastMetadata.METADATA_KEY_ARTIST, artist)
@@ -142,8 +177,149 @@ class ShoutcastDataSource(private val userAgent: String, private val metadataLis
                     .putLong(ShoutcastMetadata.METADATA_KEY_CHANNELS, channels)
                     .build()
 
-                    Log.d(TAG, "ShoutcastMetadata received\n$metadata")
-            metadataListener.onMetadataReceived(metadata)
+            Log.d(TAG, "ShoutcastMetadata received\n$metadata")
+            this.metadataListener.onMetadataReceived(metadata)
         }
+    }
+
+    /**
+     * Establishes a connection.
+     */
+    private fun makeRequest(dataSpec: DataSpec): Request {
+        val position = dataSpec.position
+        val length = dataSpec.length
+        val allowGzip = dataSpec.isFlagSet(DataSpec.FLAG_ALLOW_GZIP)
+
+        val url = HttpUrl.parse(dataSpec.uri.toString())
+        val builder = Request.Builder().url(url!!)
+
+        for ((key, value) in requestProperties.snapshot) {
+            builder.header(key, value)
+        }
+
+        if (!(position == 0L && length == C.LENGTH_UNSET.toLong())) {
+            var rangeRequest = "bytes=$position-"
+            if (length != C.LENGTH_UNSET.toLong()) {
+                rangeRequest += position + length - 1
+            }
+            builder.addHeader("Range", rangeRequest)
+        }
+
+
+        if (!allowGzip) {
+            builder.addHeader("Accept-Encoding", "identity")
+        }
+
+        if (dataSpec.postBody != null) {
+            builder.post(RequestBody.create(null, dataSpec.postBody))
+        }
+
+        builder.addHeader("User-Agent", userAgent)
+        return builder.build()
+    }
+
+    /**
+     * Skips any bytes that need skipping. Else does nothing.
+     *
+     *
+     * This implementation is based roughly on `libcore.io.Streams.skipByReading()`.
+     *
+     * @throws InterruptedIOException If the thread is interrupted during the operation.
+     * @throws EOFException If the end of the input stream is reached before the bytes are skipped.
+     */
+    @Throws(IOException::class)
+    private fun skipInternal() {
+        if (bytesSkipped == bytesToSkip) {
+            return
+        }
+
+        // Acquire the shared skip buffer.
+        val skipBuffer: ByteArray = skipBufferReference.getAndSet(null) ?: ByteArray(4096)
+
+        while (bytesSkipped != bytesToSkip) {
+            val readLength = Math.min(bytesToSkip - bytesSkipped, skipBuffer.size.toLong()).toInt()
+            val read = responseByteStream?.read(skipBuffer, 0, readLength) ?: -1
+            if (Thread.interrupted()) {
+                throw InterruptedIOException()
+            }
+            if (read == -1) {
+                throw EOFException()
+            }
+            bytesSkipped += read.toLong()
+        }
+
+        // Release the shared skip buffer.
+        skipBufferReference.set(skipBuffer)
+    }
+
+    /**
+     * Reads up to `length` bytes of data and stores them into `buffer`, starting at
+     * index `offset`.
+     *
+     *
+     * This method blocks until at least one byte of data can be read, the end of the opened range is
+     * detected, or an exception is thrown.
+     *
+     * @param buffer The buffer into which the read data should be stored.
+     * @param offset The start offset into `buffer` at which data should be written.
+     * @param length The maximum number of bytes to read.
+     * @return The number of bytes read, or [C.RESULT_END_OF_INPUT] if the end of the opened
+     * range is reached.
+     * @throws IOException If an error occurs reading from the source.
+     */
+    @Throws(IOException::class)
+    private fun readInternal(buffer: ByteArray, offset: Int, length: Int): Int {
+        var readLength = length
+        if (readLength == 0) {
+            return 0
+        }
+        if (bytesToRead != C.LENGTH_UNSET.toLong()) {
+            val bytesRemaining = bytesToRead - bytesRead
+            if (bytesRemaining == 0L) {
+                return C.RESULT_END_OF_INPUT
+            }
+            readLength = Math.min(readLength.toLong(), bytesRemaining).toInt()
+        }
+
+        val read = responseByteStream?.read(buffer, offset, readLength) ?: -1
+        if (read == -1) {
+            if (bytesToRead != C.LENGTH_UNSET.toLong()) {
+                // End of stream reached having not read sufficient data.
+                throw EOFException()
+            }
+            return C.RESULT_END_OF_INPUT
+        }
+
+        bytesRead += read.toLong()
+        return read
+    }
+
+    /**
+     * Filter the supplied stream for metadata
+     *
+     * @param stream The unfiltered shoutcast stream. Supports MP3, AAC, AACP and OGG
+     * @return InputStream which has been filtered for metadata
+     */
+    private fun filterStream(stream: InputStream): InputStream? {
+        var filteredStream: InputStream = stream
+        val headers = responseHeaders
+
+        val interval = headers?.get(ICY_METAINT)?.first()?.toInt()
+        headers?.get("Content-Type")?.first()?.let { contentType ->
+            if (audioFormat.containsKey(contentType)) {
+                filteredStream = when (audioFormat[contentType]) {
+                    "MP3", "AAC", "AACP" -> {
+                        IcyInputStream(stream, interval ?: 0, this)
+                    }
+                    "OGG" -> OggInputStream(stream, this)
+                    else -> {
+                        Log.e(TAG, "Unsupported format for extracting metadata")
+                        stream
+                    }
+                }
+
+            }
+        }
+        return filteredStream
     }
 }
