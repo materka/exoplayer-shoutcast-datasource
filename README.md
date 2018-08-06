@@ -1,7 +1,7 @@
 
 Gradle
 ------
-implementation 'com.github.materka:exoplayer-shoutcast-datasource:[latest commit]'
+implementation 'com.github.materka:exoplayer-shoutcast-datasource:1.0.0'
 
 Usage
 ------
