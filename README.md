@@ -1,3 +1,6 @@
+SEMI-DEPRECATED
+-------------
+Exoplayer will soon have native support for ICY, see https://github.com/google/ExoPlayer/issues/3735. So that makes this solution almost obsolete. What does not exist in native Exoplayer yet is support for OGG metadata. (What I know of) 
 
 Gradle
 ------
